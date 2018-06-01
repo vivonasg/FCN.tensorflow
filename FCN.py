@@ -1,6 +1,7 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
+import pdb
 
 import TensorflowUtils as utils
 import read_MITSceneParsingData as scene_parsing
@@ -140,7 +141,9 @@ def train(loss_val, var_list):
     return optimizer.apply_gradients(grads)
 
 
-def main(argv=None):
+def main(argv=None,load_pickle=False):
+
+
     keep_probability = tf.placeholder(tf.float32, name="keep_probabilty")
     image = tf.placeholder(tf.float32, shape=[None, IMAGE_SIZE, IMAGE_SIZE, 3], name="input_image")
     annotation = tf.placeholder(tf.int32, shape=[None, IMAGE_SIZE, IMAGE_SIZE, 1], name="annotation")
@@ -164,16 +167,25 @@ def main(argv=None):
     summary_op = tf.summary.merge_all()
 
     print("Setting up image reader...")
-    train_records, valid_records = scene_parsing.read_dataset(FLAGS.data_dir)
-    print(len(train_records))
-    print(len(valid_records))
 
-    print("Setting up dataset reader")
-    image_options = {'resize': True, 'resize_size': IMAGE_SIZE}
-    if FLAGS.mode == 'train':
-        train_dataset_reader = dataset.BatchDatset(train_records, image_options)
-    validation_dataset_reader = dataset.BatchDatset(valid_records, image_options)
 
+    if load_pickle:
+        print("Setting up dataset reader")
+        image_options = {'resize': True, 'resize_size': IMAGE_SIZE}
+        if FLAGS.mode == 'train':
+            train_dataset_reader = dataset.BatchDatset(records_list=[],read_pickle=True, image_options=image_options,split_mode='model',mode='train')
+        validation_dataset_reader = dataset.BatchDatset(records_list=[],read_pickle=True, image_options=image_options, split_mode='model',mode='valid')
+
+    else:
+        print("Setting up dataset reader")
+        image_options = {'resize': True, 'resize_size': IMAGE_SIZE}
+        if FLAGS.mode == 'train':
+
+            train_dataset_reader = dataset.BatchDatset(records_list=train_records,read_pickle=False, image_options=image_options,split_mode='model',mode='train')
+        validation_dataset_reader = dataset.BatchDatset(records_list=valid_records,read_pickle=False, image_options=image_options, split_mode='model',mode='valid')
+
+
+    pdb.set_trace()
     sess = tf.Session()
 
     print("Setting up Saver...")
@@ -227,4 +239,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    tf.app.run()
+    main(load_pickle=True)

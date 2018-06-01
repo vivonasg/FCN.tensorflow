@@ -3,8 +3,8 @@ Code ideas from https://github.com/Newmu/dcgan and tensorflow mnist dataset read
 """
 import numpy as np
 import scipy.misc as misc
-
-
+import pickle
+import pdb
 class BatchDatset:
     files = []
     images = []
@@ -13,7 +13,7 @@ class BatchDatset:
     batch_offset = 0
     epochs_completed = 0
 
-    def __init__(self, records_list, image_options={}):
+    def __init__(self, records_list, image_options,read_pickle=True,split_mode='model',mode='train'):
         """
         Intialize a generic file reader with batching for list of files
         :param records_list: list of file records to read -
@@ -28,19 +28,57 @@ class BatchDatset:
         print(image_options)
         self.files = records_list
         self.image_options = image_options
+
+        self.read_pickel= read_pickle
+        self.split_mode=split_mode
+
+        self.mode=mode
+
+        self.split_mode=split_mode
+
+
         self._read_images()
 
+
+
     def _read_images(self):
-        self.__channels = True
-        self.images = np.array([self._transform(filename['image']) for filename in self.files])
-        self.__channels = False
-        self.annotations = np.array(
-            [np.expand_dims(self._transform(filename['annotation']), axis=3) for filename in self.files])
+        
+
+        if self.read_pickel:
+
+
+            with open("../FCN_seams_data_"+self.split_mode, 'rb') as f:
+                data=pickle.load(f)
+
+            data=data[self.mode]
+            self.__channels = True
+            self.images=np.array([self._transform(image=data_image) for data_image in data['input']])
+
+            self.__channels = False
+            self.annotations=np.array([self._transform(image=data_image) for data_image in data['annotations']])
+
+
+        else:
+            self.__channels = True
+            self.images = np.array([self._transform(filename['image']) for filename in self.files])
+            self.__channels = False
+            self.annotations = np.array(
+                [np.expand_dims(self._transform(filename['annotation']), axis=3) for filename in self.files])
+
         print (self.images.shape)
         print (self.annotations.shape)
 
-    def _transform(self, filename):
-        image = misc.imread(filename)
+
+
+
+
+
+    def _transform(self, filename=None, image=None):
+
+        if image is None and filename is not None:
+            image = misc.imread(filename)
+
+        
         if self.__channels and len(image.shape) < 3:  # make sure images are of shape(h,w,3)
             image = np.array([image for i in range(3)])
 
